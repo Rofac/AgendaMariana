@@ -212,3 +212,55 @@ textarea.in { min-height: 70px; resize: vertical; }
 .flex { display: flex; align-items: center; gap: 8px; }
 .sp { flex: 1; }
 .oculto { display: none !important; }
+
+/* ---------- inicio con accesos rápidos */
+.ini-cab { position: relative; min-height: 128px; padding: 18px 0 6px 96px; }
+.ini-ramo { position: absolute; left: -6px; top: -4px; pointer-events: none; }
+.ini-cfg { position: absolute; right: -4px; top: 0; color: var(--lila-osc); }
+.ini-tit { text-align: center; }
+.ini-cinta { display: inline-flex; align-items: center; gap: 6px; padding: 4px 18px 6px; background: #ece2dcd9; border-radius: 4px; transform: rotate(-1.5deg);
+  box-shadow: 0 1px 2px #6b558022; clip-path: polygon(1% 6%, 99% 0, 100% 94%, 0 100%); }
+.ini-cinta span { font: 400 42px/1.1 var(--script); color: #4a3a6e; }
+.ini-sub { font: 500 14px var(--serif); color: var(--tinta); margin-top: 8px; letter-spacing: .02em; }
+.ini-hoy { padding-top: 20px; }
+.ini-l { display: flex; align-items: center; gap: 10px; padding: 7px 2px; border-bottom: 1px dotted #b9a6d688; cursor: pointer; font-size: 14px; color: var(--tinta); }
+.ini-l:last-child { border-bottom: 0; } .ini-l svg { color: var(--lila-osc); flex: none; } .ini-l b { font-weight: 600; }
+.ini-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0 8px; }
+.ini-t { position: relative; border: 0; border-radius: 16px; aspect-ratio: 1 / .92; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  font: 500 13.5px/1.15 var(--sans); color: var(--tinta); box-shadow: 0 2px 0 #5a46701a, 0 6px 14px -8px #5a467066; padding: 6px; text-align: center; }
+.ini-t svg { color: #5d4a8a; stroke-width: 1.5; }
+.ini-t.lila { background: linear-gradient(160deg, #e6dcf3, #d9cbee); }
+.ini-t.rosa { background: linear-gradient(160deg, #f6e1ea, #efd1df); } .ini-t.rosa svg { color: #8a4a6a; }
+.ini-t.beige { background: linear-gradient(160deg, #f3ebe0, #e9dccb); } .ini-t.beige svg { color: #6f5a46; }
+.ini-t:active { transform: scale(.96); }
+.ini-b { position: absolute; top: 6px; right: 8px; background: var(--lila-osc); color: #fff; font-size: 11px; font-weight: 600; border-radius: 10px; padding: 1px 7px; }
+.ini-pie { display: flex; align-items: flex-end; gap: 8px; margin-top: 10px; }
+.ini-pie .frase { flex: 1; font-size: 20px; text-align: right; }
+.volver { border: 0; background: none; color: var(--lila-osc); font: 600 14px var(--sans); display: inline-flex; align-items: center; gap: 2px; padding: 4px 6px 0 0; cursor: pointer; }
+.grilla .c .pts i.cita { background: #c98aa6; }
+.fila .txt small.rojo { color: var(--rojo); font-weight: 500; }
+
+/* ---------- notas */
+.notas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.nota-c { position: relative; text-align: left; border: 0; border-radius: 4px; padding: 14px 12px 10px; min-height: 120px; display: flex; flex-direction: column; gap: 6px;
+  font: 14px/1.4 var(--mano); color: var(--tinta); box-shadow: 0 1px 1px #5a46700f, 0 6px 14px -8px #5a467055; transform: rotate(-.6deg); }
+.nota-c:nth-child(2n) { transform: rotate(.7deg); }
+.nota-c b { font: 600 15px var(--serif); } .nota-c span { white-space: pre-line; overflow: hidden; } .nota-c small { margin-top: auto; color: var(--tenue); font: 11px var(--sans); }
+.nota-c.c0 { background: #fbf6ee; } .nota-c.c1 { background: #ece4f5; } .nota-c.c2 { background: #f6e4ec; } .nota-c.c3 { background: #eef0e2; }
+.nota-pin { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); }
+
+/* ---------- hábitos y metas */
+.hab { padding: 14px 14px 12px; }
+.hab-e { font-size: 28px; width: 40px; text-align: center; }
+.hab b { font-weight: 600; font-size: 15.5px; }
+.hab-hoy { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--lila-claro); background: #fff; color: var(--lila-claro); display: grid; place-items: center; flex: none; }
+.hab-hoy.ok { background: var(--lila-osc); border-color: var(--lila-osc); color: #fff; }
+.hab-dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+.hab-dias button { border: 1px solid var(--borde); background: #fffdf9; border-radius: 10px; padding: 4px 0; display: flex; flex-direction: column; align-items: center; color: var(--tenue); }
+.hab-dias button small { font-size: 10px; text-transform: uppercase; } .hab-dias button i { font-style: normal; font-weight: 600; font-size: 13px; }
+.hab-dias button.ok { background: var(--marca); border-color: var(--lila); color: var(--lila-osc); }
+.hab-dias button.hoy { outline: 2px solid var(--lila-osc); outline-offset: -2px; }
+.hab-barra { height: 10px; background: #fffdf9; border: 1px solid var(--borde); border-radius: 6px; overflow: hidden; margin-top: 8px; }
+.hab-barra div { height: 100%; background: linear-gradient(90deg, var(--lila), var(--lila-osc)); border-radius: 5px; transition: width .3s; }
+.meta-p { font: 600 22px var(--serif); color: var(--lila-osc); }
+@media (max-width: 390px) { .ini-cab { padding-left: 84px; } .ini-cinta span { font-size: 32px; white-space: nowrap; } .ini-pie .frase { font-size: 16px; } .ini-cfg { top: -8px; right: -8px; } .ini-t { font-size: 12px; } .ini-t svg { width: 30px; height: 30px; } }

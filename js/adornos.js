@@ -45,8 +45,31 @@
     cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/>', check: '<path d="M5 12l4.5 4.5L19 7"/>',
     cruz: '<path d="M6 6l12 12M18 6 6 18"/>', farmacia: '<path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z"/>',
     guardar: '<path d="M12 3v12M7 10l5 5 5-5M4 19h16"/>', subir: '<path d="M12 17V5M7 10l5-5 5 5M4 19h16"/>', arriba: '<path d="M6 15l6-6 6 6"/>', abajo: '<path d="M6 9l6 6 6-6"/>',
+    inicio: '<path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>',
+    midia: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3v3M15 3v3M8.5 11.5l1.5 1.5 3-3M8.5 16.5h7"/>',
+    estetos: '<path d="M6 3v6a5 5 0 0 0 10 0V3"/><path d="M4 3h4M14 3h4M11 14v2a5 5 0 0 0 10 0v-2"/><circle cx="21" cy="12" r="2"/>',
+    tareas: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l1.5 1.5L12 7M14 8.5h3M8 13l1.5 1.5L12 12M14 13.5h3M8 18h9"/>',
+    libreta: '<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M6 3v18M4 7h4M4 12h4M4 17h4M10 8h6M10 11h4"/>',
+    brote: '<path d="M12 21v-8M12 13c0-4-3-6-7-6 0 4 3 6 7 6zM12 11c0-4 3-6 7-6 0 4-3 6-7 6z"/>',
+    diana: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/><path d="M13 11l7-7M17 4h3v3"/>',
+    guardia: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/>',
+    fijar: '<path d="M9 4h6l-1 5 3 3H7l3-3zM12 15v6"/>',
     compartir: '<path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>',
   };
+  const ramo = (alto = 120) => `<svg viewBox="0 0 90 120" width="${alto * .75}" height="${alto}" aria-hidden="true">
+    <g transform="translate(-6 0) rotate(-14 45 80)">${[[-14, 70], [-6, 82], [2, 88], [10, 80], [18, 70]].map(([dx, h]) => {
+      let s = `<path d="M${45 + dx * .4} 96 Q ${45 + dx * .7} ${96 - h * .5} ${45 + dx} ${96 - h}" stroke="${VERDE}" stroke-width="1.3" fill="none"/>`;
+      for (let k = 0; k < 8; k++) { const px = 45 + dx * (1 - k * .03), py = 96 - h + k * 4.6; s += `<ellipse cx="${px - 2}" cy="${py}" rx="2" ry="3.2" transform="rotate(-25 ${px - 2} ${py})" fill="${k % 2 ? L1 : L2}"/><ellipse cx="${px + 2}" cy="${py + 1.4}" rx="2" ry="3.2" transform="rotate(25 ${px + 2} ${py + 1.4})" fill="${k % 2 ? L2 : L3}"/>`; }
+      return s; }).join('')}
+    <path d="M38 92 L52 92 L49 116 L41 116 Z" fill="#e8d9bf" stroke="#c4ab84" stroke-width="1"/>
+    <path d="M45 98 q-12 -8 -16 2 q8 4 16 -2 q12 -8 16 2 q-8 4 -16 -2" fill="#d9c6e9" stroke="${L3}" stroke-width="1"/>
+    <path d="M45 98 q-4 10 -10 16 M45 98 q4 10 10 16" stroke="${L3}" stroke-width="1.2" fill="none"/></g></svg>`;
+  const libros = (ancho = 150) => `<svg viewBox="0 0 160 70" width="${ancho}" height="${ancho * 70 / 160}" aria-hidden="true">
+    <rect x="6" y="48" width="104" height="16" rx="3" fill="#cbb8e6" stroke="${L3}" stroke-width="1"/><path d="M12 52h88M12 56h88" stroke="#fff" stroke-width="1.2" opacity=".7"/>
+    <rect x="14" y="33" width="92" height="15" rx="3" fill="#ead9e4" stroke="#b98aa6" stroke-width="1"/><path d="M20 38h76" stroke="#fff" stroke-width="1.2" opacity=".7"/>
+    <rect x="10" y="20" width="96" height="13" rx="3" fill="#b9a6d6" stroke="${L3}" stroke-width="1"/><path d="M16 25h80" stroke="#fff" stroke-width="1.2" opacity=".7"/>
+    <path d="M120 34h26v24a8 8 0 0 1-8 8h-10a8 8 0 0 1-8-8z" fill="#fbf7f1" stroke="#9a86bd" stroke-width="1.6"/><path d="M146 40c8 0 8 14 0 14" fill="none" stroke="#9a86bd" stroke-width="1.6"/>
+    <path d="M133 50c-3-3-6-1-5 2 1 2 5 4 5 4s4-2 5-4c1-3-2-5-5-2" fill="#c98aa6"/><path d="M128 28q3-4 0-8M136 28q3-4 0-8" stroke="#c9bfd4" stroke-width="1.4" fill="none"/></svg>`;
   const icono = (n, t = 22) => `<svg viewBox="0 0 24 24" width="${t}" height="${t}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[n] || ''}</svg>`;
-  window.Adorno = { flor, lavanda, mariposa, clip, corazon, chinche, icono };
+  window.Adorno = { flor, lavanda, mariposa, clip, corazon, chinche, icono, ramo, libros };
 })();

@@ -3,13 +3,13 @@
   const F = Agenda.F, A = Agenda.cargar(), Ad = Adorno, I = Ad.icono;
   const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const VERSION = 'v1.0';
+  const VERSION = 'v1.1';
   const DIAS3 = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
   const FRASES = ['Un día a la vez', 'Paso a paso', 'Hoy también suma', 'Respirá, vas bien', 'Pequeños pasos, grandes cambios', 'Lo que hacés con amor se nota'];
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
 
   let HOY = F.hoyLocal();
-  const V = { pant: 'hoy', mes: HOY.slice(0, 7), lunes: F.lunesDe(HOY) };
+  const V = { pant: 'inicio', mes: HOY.slice(0, 7), lunes: F.lunesDe(HOY) };
   try { const p = sessionStorage.getItem('agenda_pant'); if (p) V.pant = p; } catch (e) {}
 
   // ---------- utilidades de pantalla
@@ -43,28 +43,21 @@
       ${titulo ? `<h1>${esc(titulo)}</h1>` : ''}${script ? `<div class="script">${esc(script)}</div>` : ''}${extra}</div>`;
   }
 
-  // =================== HOY
+  // =================== MI DÍA
   function pHoy() {
-    const i = A.info(HOY), d = F.aD(HOY), dd = A.dia(HOY);
-    let turno;
-    if (i.nuestra) turno = `<div class="msg">¡Hoy tenemos guardia!</div><div class="quien"><span class="resaltado">${esc(nombreF(i.turno))}</span></div>
-        <div class="det">${i.tomada ? 'Tomada de ' + esc(nombreF(i.oficial)) : 'Farmacia de turno'}${i.cambio && i.cambio.nota ? ' · ' + esc(i.cambio.nota) : ''}</div>`;
-    else turno = `<div class="det">Hoy está de turno</div><div class="quien">${esc(nombreF(i.turno))}</div>
-        <div class="det">${i.cedida ? `Era de <span class="tachado">${esc(nombreF(i.oficial))}</span>, se la cedimos` : 'Hoy no tenemos guardia'}${i.cambio && i.cambio.nota ? ' · ' + esc(i.cambio.nota) : ''}</div>`;
-    const prox = A.proximasNuestras(F.sumar(HOY, 1), 5);
-    const recs = A.recordatoriosEntre(HOY, F.sumar(HOY, 7));
-    const frase = FRASES[F.entre('2026-01-01', HOY) % FRASES.length];
-    return cab('una guardia a la vez', F.DIAS[d.getUTCDay()], d.getUTCDate() + ' de ' + F.MESES[d.getUTCMonth()]) +
-      instalarAviso() +
-      `<div class="hoja-p turno-hoy ${i.nuestra ? 'lila' : ''} fila-toca" data-acc="dia" data-f="${HOY}" style="cursor:pointer">
-        <span class="cinta">De turno hoy</span><span class="adorno" style="right:-8px;bottom:-14px">${Ad.mariposa(46)}</span>${turno}</div>
-      <div class="hoja-p"><span class="cinta cuadros">Próximas guardias</span><span class="adorno" style="left:-10px;top:-16px">${Ad.clip(44)}</span>
-        ${prox.map(filaGuardia).join('') || '<div class="vacio">No hay guardias cargadas</div>'}</div>
-      <div class="hoja-p"><span class="cinta">Recordatorios</span><span class="adorno" style="right:6px;top:-10px">${Ad.chinche()}</span>
-        ${recs.map(r => filaRec(r, true)).join('') || '<div class="vacio">Nada para esta semana ' + Ad.corazon(12) + '</div>'}
-        <div class="botones"><button class="btn sec chico" data-acc="nuevoRec" data-f="${HOY}">${I('mas_', 18)} Recordatorio</button></div></div>
+    const d = F.aD(HOY), dd = A.dia(HOY);
+    const recs = A.recordatoriosDe(HOY), citas = A.citasDe(HOY);
+    const tareas = A.tareasPendientes().filter(t => t.fecha && t.fecha <= HOY), H = A.E.habitos;
+    return volver() + cab('un día a la vez', F.DIAS[d.getUTCDay()], d.getUTCDate() + ' de ' + F.MESES[d.getUTCMonth()]) +
+      instalarAviso() + turnoCard() +
+      (citas.length ? `<div class="hoja-p"><span class="cinta">Citas de hoy</span>${citas.map(c => filaCita(c, false)).join('')}</div>` : '') +
+      `<div class="hoja-p"><span class="cinta cuadros">Para hoy</span><span class="adorno" style="right:6px;top:-10px">${Ad.chinche()}</span>
+        ${tareas.map(filaTarea).join('')}${recs.map(r => filaRec(r, true)).join('')}
+        ${tareas.length || recs.length ? '' : '<div class="vacio">Nada pendiente para hoy ' + Ad.corazon(12) + '</div>'}
+        <div class="botones"><button class="btn sec chico" data-acc="nuevaTarea" data-f="${HOY}">${I('mas_', 18)} Tarea</button><button class="btn sec chico" data-acc="nuevoRec" data-f="${HOY}">${I('mas_', 18)} Recordatorio</button></div></div>
+      ${H.length ? `<div class="hoja-p"><span class="cinta">Hábitos de hoy</span><div class="pills" style="margin-top:6px">${H.map(h => `<button class="${A.habitoHecho(h.id, HOY) ? 'act' : ''}" data-acc="habDia" data-id="${h.id}" data-f="${HOY}">${esc(h.emoji)} ${esc(h.nombre)}</button>`).join('')}</div></div>` : ''}
       ${miDia(HOY, dd)}
-      <div class="frase">“${esc(frase)}” ${Ad.corazon(14)}</div>`;
+      <div class="frase">“${esc(FRASES[F.entre('2026-01-01', HOY) % FRASES.length])}” ${Ad.corazon(14)}</div>`;
   }
   function filaGuardia(i) {
     const d = F.aD(i.fecha);
@@ -109,7 +102,7 @@
       else if (i.nuestra || todas) cont = `<span class="f">${esc(nombre)}</span>`;
       celdas += `<button class="c ${i.nuestra ? 'nuestra' : ''} ${f === HOY ? 'hoy' : ''} ${i.estimado ? 'est' : ''}" data-acc="dia" data-f="${f}" aria-label="${esc(F.fechaLarga(f) + ': ' + nombreF(i.turno))}">
         <span class="n">${F.aD(f).getUTCDate()}</span>${cont}
-        <span class="pts">${recs.length ? '<i></i>' : ''}${dd && (dd.notas || dd.foco) ? '<i class="nota"></i>' : ''}</span>${i.cambio && i.cambio.f !== i.oficial ? '<span class="ico-cambio">⇄</span>' : ''}</button>`;
+        <span class="pts">${A.citasDe(f).length ? '<i class="cita"></i>' : ''}${recs.length || A.tareasDe(f).some(t => !t.ok) ? '<i></i>' : ''}${dd && (dd.notas || dd.foco) ? '<i class="nota"></i>' : ''}</span>${i.cambio && i.cambio.f !== i.oficial ? '<span class="ico-cambio">⇄</span>' : ''}</button>`;
     }
     const resto = (7 - (vacias + F.finDeMes(a, m)) % 7) % 7;
     for (let k = 0; k < resto; k++) celdas += `<div class="c fuera"></div>`;
@@ -140,6 +133,8 @@
         : `<span class="ph">De turno:</span> ${esc(nombreF(i.turno))}${i.cedida ? ` <span class="chip ced">cedida</span>` : ''}`;
       filas += `<div class="dia-sem ${f === HOY ? 'hoy' : ''}" data-acc="dia" data-f="${f}"><div class="izq"><small>${F.DIAS[d.getUTCDay()].slice(0, 3)}</small><b>${d.getUTCDate()}</b></div>
         <div class="der"><div class="tur">${tur}${i.estimado ? ' <span class="chip est">a confirmar</span>' : ''}</div>
+        ${A.citasDe(f).map(c => `<div class="rec">${I('estetos', 13)} ${c.hora ? `<span class="h">${c.hora}</span> ` : ''}${esc(c.titulo)}</div>`).join('')}
+        ${A.tareasDe(f).map(t => `<div class="rec ${t.ok ? 'tachado' : ''}">☐ ${esc(t.t)}</div>`).join('')}
         ${recs.map(r => `<div class="rec ${r.hecho ? 'tachado' : ''}">${Ad.corazon(10)} ${r.hora ? `<span class="h">${r.hora}</span> ` : ''}${esc(r.titulo)}</div>`).join('')}
         ${pend ? `<div class="rec" style="color:var(--tenue)">☐ ${pend} pendiente${pend > 1 ? 's' : ''}</div>` : ''}${dia && dia.notas ? `<div class="rec" style="color:var(--tenue)">✎ ${esc(dia.notas)}</div>` : ''}</div></div>`;
     }
@@ -152,24 +147,200 @@
   }
 
   // =================== RECORDAR
-  function pRecordar() {
+  function pRecordar() { return volver() + cab('no te olvides', 'Recordar', 'lo importante') + cuerpoRecordar(); }
+  function cuerpoRecordar() {
     const prox = A.recordatoriosEntre(HOY, F.sumar(HOY, 60));
     const atras = A.recordatoriosEntre(F.sumar(HOY, -30), F.sumar(HOY, -1)).filter(r => !r.hecho);
     const porDia = {}; prox.forEach(r => (porDia[r.dia] = porDia[r.dia] || []).push(r));
     const bloques = Object.keys(porDia).map(f => `<div style="margin-top:10px"><div style="font:600 12px var(--serif);letter-spacing:.1em;text-transform:uppercase;color:var(--lila-osc)">${f === HOY ? 'Hoy' : esc(F.fechaLarga(f))} <span style="color:var(--tenue);font-weight:400;text-transform:none;letter-spacing:0">· ${faltan(f)}</span></div>${porDia[f].map(r => filaRec(r, false)).join('')}</div>`).join('');
     const todos = A.E.recordatorios.slice().sort((x, y) => x.fecha < y.fecha ? -1 : 1);
-    return cab('no te olvides', 'Recordar', 'lo importante') +
-      `<div style="text-align:center"><button class="btn" data-acc="nuevoRec" data-f="${HOY}">${I('mas_', 20)} Nuevo recordatorio</button></div>
+    return `<div class="muestra" style="text-align:center;margin:0 0 8px">Los recordatorios tienen día y hora y se pueden repetir (cada semana, mes o año).</div>
+      <div style="text-align:center"><button class="btn" data-acc="nuevoRec" data-f="${HOY}">${I('mas_', 20)} Nuevo recordatorio</button></div>
       ${atras.length ? `<div class="hoja-p"><span class="cinta cuadros">Quedaron sin marcar</span>${atras.map(r => filaRec(r, true)).join('')}</div>` : ''}
       <div class="hoja-p"><span class="cinta">Próximos 60 días</span><span class="adorno" style="right:4px;top:-10px">${Ad.chinche()}</span>${bloques || '<div class="vacio">No hay recordatorios</div>'}</div>
       ${todos.length ? `<div class="hoja-p"><span class="cinta papel">Todos (${todos.length})</span>${todos.map(r => `<div class="fila toca" data-acc="editRec" data-id="${r.id}" data-f="${r.fecha}"><div class="txt"><b>${esc(r.titulo)}</b><small>${F.fechaCorta(r.fecha)}/${r.fecha.slice(0, 4)}${r.hora ? ' · ' + r.hora : ''}${r.repetir !== 'no' ? ' · ' + repTxt[r.repetir] : ''}</small></div>${I('lapiz', 18)}</div>`).join('')}</div>` : ''}`;
+  }
+
+  // =================== INICIO (accesos rápidos)
+  const volver = () => `<button class="volver" data-acc="ir" data-p="inicio">${I('izq', 18)} Inicio</button>`;
+  const fechaChica = f => `${DIAS3[F.diaSemana(f)]} ${F.fechaCorta(f)}`;
+  function pInicio() {
+    const d = F.aD(HOY), i = A.info(HOY), prox = A.proximasNuestras(F.sumar(HOY, 1), 1)[0];
+    const cita = A.citasEntre(HOY, F.sumar(HOY, 365)).find(c => !c.fui);
+    const pend = A.tareasPendientes(), paraHoy = pend.filter(t => t.fecha && t.fecha <= HOY).length + A.recordatoriosDe(HOY).filter(r => !r.hecho).length;
+    const hab = A.E.habitos, hechos = hab.filter(h => A.habitoHecho(h.id, HOY)).length;
+    const citas7 = A.citasEntre(HOY, F.sumar(HOY, 7)).filter(c => !c.fui).length;
+    const metasAbiertas = A.E.metas.filter(m => m.avance < 100).length;
+    const T = [['mes', 'Calendario', 'mes', 'lila', ''], ['hoy', 'Mi Día', 'midia', 'lila', paraHoy || ''], ['semana', 'Mi Semana', 'semana', 'lila', ''],
+      ['guardias', 'Guardias', 'guardia', 'lila', i.nuestra ? 'hoy' : ''], ['citas', 'Citas Médicas', 'estetos', 'rosa', citas7 || ''], ['tareas', 'Tareas', 'tareas', 'beige', pend.length || ''],
+      ['notas', 'Notas', 'libreta', 'lila', ''], ['habitos', 'Hábitos', 'brote', 'beige', hab.length ? `${hechos}/${hab.length}` : ''], ['metas', 'Metas', 'diana', 'rosa', metasAbiertas || '']];
+    const linea = (p, ic, html) => `<div class="ini-l" data-acc="ir" data-p="${p}">${I(ic, 20)}<span>${html}</span></div>`;
+    return `<div class="ini-cab"><span class="ini-ramo">${Ad.ramo(112)}</span><button class="mini ini-cfg" data-acc="ir" data-p="mas" aria-label="Ajustes">${I('mas', 24)}</button>
+        <div class="ini-tit"><div class="ini-cinta"><span>Mi Agenda</span> ${Ad.corazon(18, '#6f5a96')}</div><div class="ini-sub">personal y de guardias</div></div></div>
+      ${instalarAviso()}
+      <div class="hoja-p ini-hoy"><span class="cinta">Hoy · ${esc(F.DIAS[d.getUTCDay()])} ${d.getUTCDate()}</span>
+        ${linea('guardias', 'guardia', i.nuestra ? `<b>¡Hoy tenemos guardia!</b> <span class="resaltado">${esc(nombreF(i.turno))}</span>` : `De turno: <b>${esc(nombreF(i.turno))}</b>${prox ? ` · próxima nuestra <b>${fechaChica(prox.fecha)}</b> (${faltan(prox.fecha)})` : ''}`)}
+        ${cita ? linea('citas', 'estetos', `Próxima cita: <b>${esc(cita.titulo)}</b> · ${cita.fecha === HOY ? 'hoy' : fechaChica(cita.fecha)}${cita.hora ? ' ' + cita.hora : ''}`) : ''}
+        ${linea('tareas', 'tareas', pend.length ? `<b>${pend.length}</b> tarea${pend.length > 1 ? 's' : ''} pendiente${pend.length > 1 ? 's' : ''}${paraHoy ? ` · <b>${paraHoy}</b> para hoy` : ''}` : 'Sin tareas pendientes ' + Ad.corazon(11))}
+        ${hab.length ? linea('habitos', 'brote', `Hábitos de hoy: <b>${hechos} de ${hab.length}</b>`) : ''}</div>
+      <div class="ini-grid">${T.map(([p, t, ic, col, b]) => `<button class="ini-t ${col}" data-acc="ir" data-p="${p}">${b !== '' ? `<span class="ini-b">${b}</span>` : ''}${I(ic, 34)}<span>${t}</span></button>`).join('')}</div>
+      <div class="ini-pie">${Ad.libros(150)}<div class="frase" style="padding:0">“${esc(FRASES[F.entre('2026-01-01', HOY) % FRASES.length])}” ${Ad.corazon(13)}</div></div>`;
+  }
+
+  // =================== GUARDIAS
+  function turnoCard() {
+    const i = A.info(HOY);
+    const turno = i.nuestra ? `<div class="msg">¡Hoy tenemos guardia!</div><div class="quien"><span class="resaltado">${esc(nombreF(i.turno))}</span></div>
+        <div class="det">${i.tomada ? 'Tomada de ' + esc(nombreF(i.oficial)) : 'Farmacia de turno'}${i.cambio && i.cambio.nota ? ' · ' + esc(i.cambio.nota) : ''}</div>`
+      : `<div class="det">Hoy está de turno</div><div class="quien">${esc(nombreF(i.turno))}</div>
+        <div class="det">${i.cedida ? `Era de <span class="tachado">${esc(nombreF(i.oficial))}</span>, se la cedimos` : 'Hoy no tenemos guardia'}${i.cambio && i.cambio.nota ? ' · ' + esc(i.cambio.nota) : ''}</div>`;
+    return `<div class="hoja-p turno-hoy ${i.nuestra ? 'lila' : ''}" data-acc="dia" data-f="${HOY}" style="cursor:pointer">
+        <span class="cinta">De turno hoy</span><span class="adorno" style="right:-8px;bottom:-14px">${Ad.mariposa(46)}</span>${turno}</div>`;
+  }
+  function pGuardias() {
+    const [a, m] = HOY.slice(0, 7).split('-').map(Number), r = A.resumenMes(a, m), prox = A.proximasNuestras(F.sumar(HOY, 1), 10);
+    const porF = Object.entries(r.porFarmacia).map(([id, n]) => `${esc(nombreF(id))} ${n}`).join(' · ');
+    return volver() + cab('la farmacia', 'Guardias', 'una a la vez') + turnoCard() +
+      `<div class="hoja-p"><span class="cinta cuadros">Próximas guardias</span><span class="adorno" style="left:-10px;top:-16px">${Ad.clip(44)}</span>
+        ${prox.map(filaGuardia).join('') || '<div class="vacio">No hay guardias cargadas</div>'}</div>
+      <div class="hoja-p lila"><span class="cinta">Este mes</span><div class="resumen-mes"><span><b>${r.total}</b> guardias nuestras</span>${porF ? `<span>${porF}</span>` : ''}
+        ${r.cedidas ? `<span class="chip ced">${r.cedidas} cedida${r.cedidas > 1 ? 's' : ''}</span>` : ''}${r.tomadas ? `<span class="chip tom">${r.tomadas} tomada${r.tomadas > 1 ? 's' : ''}</span>` : ''}</div></div>
+      <div class="botones"><button class="btn" data-acc="ir" data-p="mes">${I('mes', 18)} Ver calendario</button><button class="btn sec" data-acc="icsGuardias">${I('cal', 18)} Al calendario del iPhone</button></div>
+      <div class="botones"><button class="btn sec chico" data-acc="ir" data-p="mas">Listado de turnos y farmacias</button></div>
+      <div class="muestra" style="text-align:center">Para ceder o cambiar una guardia, tocá el día en el calendario.</div>`;
+  }
+
+  // =================== CITAS MÉDICAS
+  function filaCita(c, conFecha = true) {
+    const d = F.aD(c.fecha);
+    return `<div class="fila toca ${c.fui ? 'hecho' : ''}" data-acc="editCita" data-id="${c.id}">${conFecha ? `<div class="fecha"><small>${DIAS3[d.getUTCDay()]}</small><b>${d.getUTCDate()}</b><small>${F.MESES[d.getUTCMonth()].slice(0, 3)}</small></div>` : `<span style="color:#b5576b">${I('estetos', 20)}</span>`}
+      <div class="txt"><b>${esc(c.titulo)}</b><small>${c.hora ? c.hora + ' h' : 'sin hora'}${c.lugar ? ' · ' + esc(c.lugar) : ''}</small>${c.nota ? `<small>✎ ${esc(c.nota)}</small>` : ''}</div>
+      ${conFecha && c.fecha >= HOY ? `<div class="falta">${faltan(c.fecha)}</div>` : ''}</div>`;
+  }
+  function pCitas() {
+    const prox = A.citasEntre(HOY, '9999-12-31'), pas = A.E.citas.filter(c => c.fecha < HOY).sort((a, b) => a.fecha < b.fecha ? 1 : -1).slice(0, 20);
+    return volver() + cab('salud', 'Citas médicas', 'cuidarme también') +
+      `<div style="text-align:center"><button class="btn" data-acc="nuevaCita" data-f="${HOY}">${I('mas_', 20)} Nueva cita</button></div>
+      <div class="hoja-p"><span class="cinta">Próximas</span><span class="adorno" style="right:-6px;top:-16px">${Ad.flor(34, '#ead0dc', '#c98aa6')}</span>${prox.map(c => filaCita(c)).join('') || '<div class="vacio">No hay citas cargadas</div>'}</div>
+      ${pas.length ? `<div class="hoja-p"><span class="cinta papel">Anteriores</span>${pas.map(c => filaCita(c)).join('')}</div>` : ''}
+      <div class="muestra" style="text-align:center">Al guardar podés pasarla al calendario del iPhone: te avisa 2 horas antes.</div>`;
+  }
+  function hCita(c) {
+    return () => `${btnCerrar}<h2>${c.id ? 'Cita médica' : 'Nueva cita médica'}</h2>
+      <label class="l">Médico o especialidad</label><input class="in" id="ciT" value="${esc(c.titulo || '')}" placeholder="Ej.: Ginecóloga, Dr. Pérez, análisis de sangre" autocomplete="off">
+      <div class="dos"><div><label class="l">Fecha</label><input class="in" type="date" id="ciF" value="${c.fecha || HOY}"></div><div><label class="l">Hora</label><input class="in" type="time" id="ciH" value="${c.hora || ''}"></div></div>
+      <label class="l">Lugar</label><input class="in" id="ciL" value="${esc(c.lugar || '')}" placeholder="Consultorio, sanatorio, dirección…">
+      <label class="l">Qué llevar / notas</label><textarea class="in" id="ciN" placeholder="Estudios, orden, carnet de la obra social, ir en ayunas…">${esc(c.nota || '')}</textarea>
+      ${c.id && c.fecha <= HOY ? `<label class="chk"><input type="checkbox" id="ciFui" ${c.fui ? 'checked' : ''}> Ya fui</label>` : ''}
+      <div class="error" id="ciErr"></div>
+      <div class="botones"><button class="btn" data-acc="guardarCita" data-id="${c.id || ''}">Guardar</button><button class="btn sec" data-acc="guardarCita" data-id="${c.id || ''}" data-ics="1">${I('cal', 17)} Guardar y al calendario</button></div>
+      ${c.id ? `<div class="botones"><button class="btn peligro chico" data-acc="borrarCita" data-id="${c.id}">${I('basura', 16)} Borrar</button></div>` : ''}`;
+  }
+
+  // =================== TAREAS (y recordatorios)
+  function filaTarea(t) {
+    const venc = t.fecha && t.fecha < HOY && !t.ok, hoy = t.fecha === HOY;
+    return `<div class="fila ${t.ok ? 'hecho' : ''}"><button class="circ ${t.ok ? 'ok' : ''}" data-acc="tareaOk" data-id="${t.id}" aria-label="Hecha">${t.ok ? I('check', 15) : ''}</button>
+      <div class="txt toca" data-acc="editTarea" data-id="${t.id}" style="cursor:pointer"><b>${esc(t.t)}</b>
+        ${t.fecha ? `<small class="${venc ? 'rojo' : ''}">${venc ? 'venció el ' + F.fechaCorta(t.fecha) : hoy ? 'para hoy' : 'para el ' + fechaChica(t.fecha)}</small>` : ''}${t.nota ? `<small>${esc(t.nota)}</small>` : ''}</div></div>`;
+  }
+  function pTareas() {
+    const tab = V.tTab || 'tareas';
+    let cuerpo;
+    if (tab === 'tareas') {
+      const pend = A.tareasPendientes(), hechas = A.E.tareas.filter(t => t.ok).sort((a, b) => a.hecha < b.hecha ? 1 : -1).slice(0, 20);
+      cuerpo = `<div class="hoja-p"><span class="cinta">Pendientes (${pend.length})</span><span class="adorno" style="right:4px;top:-10px">${Ad.chinche()}</span>
+          <form class="add-pend" data-acc="tareaAdd"><input class="in" name="t" placeholder="Nueva tarea…" enterkeyhint="done" autocomplete="off"><button class="btn chico" aria-label="Agregar">${I('mas_', 18)}</button></form>
+          <div class="muestra" style="margin:2px 0 6px">Para ponerle fecha límite, tocá la tarea.</div>
+          ${pend.map(filaTarea).join('') || '<div class="vacio">¡Nada pendiente! ' + Ad.corazon(12) + '</div>'}</div>
+        ${hechas.length ? `<div class="hoja-p"><span class="cinta papel">Hechas</span>${hechas.map(filaTarea).join('')}<div class="botones"><button class="btn peligro chico" data-acc="borrarHechas">${I('basura', 16)} Borrar las hechas</button></div></div>` : ''}`;
+    } else cuerpo = cuerpoRecordar();
+    return volver() + cab('no te olvides', 'Tareas', 'paso a paso') +
+      `<div class="seg"><button class="${tab === 'tareas' ? 'act' : ''}" data-acc="tTab" data-v="tareas">Tareas</button><button class="${tab === 'rec' ? 'act' : ''}" data-acc="tTab" data-v="rec">Recordatorios</button></div>` + cuerpo;
+  }
+  function hTarea(t) {
+    return () => `${btnCerrar}<h2>${t.id ? 'Tarea' : 'Nueva tarea'}</h2>
+      <label class="l">Tarea</label><input class="in" id="taT" value="${esc(t.t || '')}" autocomplete="off">
+      <label class="l">Para cuándo (opcional)</label><input class="in" type="date" id="taF" value="${t.fecha || ''}">
+      <label class="l">Nota</label><textarea class="in" id="taN" placeholder="Opcional">${esc(t.nota || '')}</textarea>
+      <div class="error" id="taErr"></div>
+      <div class="botones"><button class="btn" data-acc="guardarTarea" data-id="${t.id || ''}">Guardar</button>${t.id ? `<button class="btn peligro" data-acc="borrarTarea" data-id="${t.id}">${I('basura', 16)} Borrar</button>` : ''}</div>`;
+  }
+
+  // =================== NOTAS
+  function pNotas() {
+    const l = A.notasOrdenadas();
+    return volver() + cab('ideas y listas', 'Notas', 'para no olvidar') +
+      `<div style="text-align:center;margin-bottom:6px"><button class="btn" data-acc="editNota" data-id="">${I('mas_', 20)} Nueva nota</button></div>
+      <div class="notas-grid">${l.map(n => `<button class="nota-c c${n.color || 0}" data-acc="editNota" data-id="${n.id}">${n.fijada ? `<span class="nota-pin">${Ad.chinche(18)}</span>` : ''}
+        ${n.titulo ? `<b>${esc(n.titulo)}</b>` : ''}<span>${esc((n.texto || '').slice(0, 160))}${(n.texto || '').length > 160 ? '…' : ''}</span><small>${F.fechaCorta(n.mod.slice(0, 10))}</small></button>`).join('')}</div>
+      ${l.length ? '' : `<div class="vacio" style="margin-top:20px">Todavía no hay notas</div>`}`;
+  }
+  function hNota(n) {
+    return () => `${btnCerrar}<h2>${n.id ? 'Nota' : 'Nueva nota'}</h2>
+      <input class="in" id="noT" value="${esc(n.titulo || '')}" placeholder="Título" autocomplete="off" style="font-weight:600">
+      <textarea class="in renglones" id="noX" placeholder="Escribí acá…" style="min-height:220px;margin-top:10px">${esc(n.texto || '')}</textarea>
+      <div class="error" id="noErr"></div>
+      <div class="botones"><button class="btn" data-acc="guardarNota" data-id="${n.id || ''}">Guardar</button>
+      ${n.id ? `<button class="btn sec" data-acc="fijarNota" data-id="${n.id}">${I('fijar', 16)} ${n.fijada ? 'Desfijar' : 'Fijar arriba'}</button><button class="btn peligro" data-acc="borrarNota" data-id="${n.id}">${I('basura', 16)}</button>` : ''}</div>`;
+  }
+
+  // =================== HÁBITOS
+  const EMOJIS = ['💧', '🚶‍♀️', '📖', '🧘‍♀️', '🍎', '😴', '💊', '🏋️‍♀️', '🌿', '✍️', '📵', '🙏', '🧴', '🌱'];
+  const SUGERIDOS = [['Tomar 8 vasos de agua', '💧'], ['Caminar 30 minutos', '🚶‍♀️'], ['Leer un rato', '📖'], ['Respirar / meditar', '🧘‍♀️'], ['Comer fruta', '🍎'], ['Dormir temprano', '😴']];
+  function pHabitos() {
+    const H = A.E.habitos, hechos = H.filter(h => A.habitoHecho(h.id, HOY)).length;
+    const dias = []; for (let k = 6; k >= 0; k--) dias.push(F.sumar(HOY, -k));
+    const sug = SUGERIDOS.filter(([n]) => !H.some(h => h.nombre.toLowerCase() === n.toLowerCase()));
+    return volver() + cab('un día a la vez', 'Hábitos', 'pequeños pasos') +
+      (H.length ? `<div class="hoja-p lila" style="text-align:center;padding:14px"><span class="cinta">Hoy</span><div class="resumen-mes"><span><b>${hechos}</b> de ${H.length} hechos</span></div>
+        <div class="hab-barra"><div style="width:${H.length ? hechos / H.length * 100 : 0}%"></div></div></div>` : '') +
+      H.map(h => { const hoyOk = A.habitoHecho(h.id, HOY), r = A.racha(h.id, HOY);
+        return `<div class="hoja-p hab"><div class="flex"><span class="hab-e">${esc(h.emoji)}</span><div style="flex:1;min-width:0"><b class="toca" data-acc="editHab" data-id="${h.id}" style="cursor:pointer">${esc(h.nombre)}</b>
+          <div class="muestra" style="margin:0">${r ? `🔥 ${r} día${r > 1 ? 's' : ''} seguido${r > 1 ? 's' : ''}` : 'Empezá hoy'}</div></div>
+          <button class="hab-hoy ${hoyOk ? 'ok' : ''}" data-acc="habDia" data-id="${h.id}" data-f="${HOY}" aria-label="Hecho hoy">${I('check', 26)}</button></div>
+          <div class="hab-dias">${dias.map(f => `<button class="${A.habitoHecho(h.id, f) ? 'ok' : ''} ${f === HOY ? 'hoy' : ''}" data-acc="habDia" data-id="${h.id}" data-f="${f}"><small>${DIAS3[F.diaSemana(f)].slice(0, 2)}</small><i>${F.aD(f).getUTCDate()}</i></button>`).join('')}</div></div>`; }).join('') +
+      (sug.length ? `<div class="hoja-p"><span class="cinta cuadros">Ideas${H.length ? '' : ' para empezar'}</span><div class="pills" style="margin-top:6px">${sug.map(([n, e]) => `<button data-acc="habSug" data-n="${esc(n)}" data-e="${e}">${e} ${esc(n)}</button>`).join('')}</div></div>` : '') +
+      `<div style="text-align:center"><button class="btn" data-acc="editHab" data-id="">${I('mas_', 20)} Nuevo hábito</button></div>
+      <div class="muestra" style="text-align:center">Tocá los días de abajo para marcar o desmarcar días anteriores.</div>`;
+  }
+  let habEmoji = '🌱';
+  function hHabito(h) {
+    return () => `${btnCerrar}<h2>${h.id ? 'Hábito' : 'Nuevo hábito'}</h2>
+      <label class="l">Hábito</label><input class="in" id="haN" value="${esc(h.nombre || '')}" placeholder="Ej.: Tomar agua, caminar, leer" autocomplete="off">
+      <label class="l">Dibujito</label><div class="pills" id="haE">${EMOJIS.map(e => `<button type="button" data-acc="habEmoji" data-e="${e}" class="${e === habEmoji ? 'act' : ''}" style="font-size:20px;padding:6px 10px">${e}</button>`).join('')}</div>
+      <div class="error" id="haErr"></div>
+      <div class="botones"><button class="btn" data-acc="guardarHab" data-id="${h.id || ''}">Guardar</button>${h.id ? `<button class="btn peligro" data-acc="borrarHab" data-id="${h.id}">${I('basura', 16)} Borrar</button>` : ''}</div>`;
+  }
+
+  // =================== METAS
+  function pMetas() {
+    const M = A.E.metas.slice().sort((a, b) => (a.avance >= 100) - (b.avance >= 100) || ((a.fecha || '9999') < (b.fecha || '9999') ? -1 : 1));
+    return volver() + cab('sueños con fecha', 'Metas', 'vamos por más') +
+      `<div style="text-align:center"><button class="btn" data-acc="editMeta" data-id="">${I('mas_', 20)} Nueva meta</button></div>` +
+      M.map(m => { const ok = m.avance >= 100, n = m.fecha ? F.entre(HOY, m.fecha) : null;
+        return `<div class="hoja-p meta ${ok ? 'lila' : ''}">${ok ? `<span class="adorno" style="right:-8px;top:-14px">${Ad.flor(38)}</span>` : ''}
+          <div class="flex"><b class="toca" data-acc="editMeta" data-id="${m.id}" style="flex:1;cursor:pointer;font:600 17px var(--serif)">${esc(m.titulo)}</b><span class="meta-p">${m.avance}%</span></div>
+          <div class="muestra" style="margin:2px 0 8px">${ok ? '¡Cumplida! 🎉' : m.fecha ? `Para el ${F.fechaCorta(m.fecha)}/${m.fecha.slice(2, 4)} · ${n < 0 ? 'se pasó la fecha' : n === 0 ? 'es hoy' : 'faltan ' + n + ' días'}` : 'Sin fecha'}${m.nota ? ' · ' + esc(m.nota) : ''}</div>
+          <div class="hab-barra"><div style="width:${m.avance}%"></div></div>
+          ${ok ? '' : `<div class="botones" style="margin-top:10px"><button class="btn sec chico" data-acc="metaMas" data-id="${m.id}" data-n="-10">−10%</button><button class="btn chico" data-acc="metaMas" data-id="${m.id}" data-n="10">+10%</button></div>`}</div>`; }).join('') +
+      (M.length ? '' : `<div class="vacio" style="margin-top:20px">Escribí una meta: ahorrar para un viaje, terminar un curso, leer 12 libros…</div>`);
+  }
+  function hMeta(m) {
+    return () => `${btnCerrar}<h2>${m.id ? 'Meta' : 'Nueva meta'}</h2>
+      <label class="l">Meta</label><input class="in" id="meT" value="${esc(m.titulo || '')}" placeholder="Ej.: Ahorrar para las vacaciones" autocomplete="off">
+      <div class="dos"><div><label class="l">Para cuándo</label><input class="in" type="date" id="meF" value="${m.fecha || ''}"></div>
+        <div><label class="l">Avance (%)</label><input class="in" type="number" inputmode="numeric" min="0" max="100" step="5" id="meA" value="${m.avance || 0}"></div></div>
+      <label class="l">Nota</label><textarea class="in" id="meN" placeholder="Cómo lo voy a lograr…">${esc(m.nota || '')}</textarea>
+      <div class="error" id="meErr"></div>
+      <div class="botones"><button class="btn" data-acc="guardarMeta" data-id="${m.id || ''}">Guardar</button>${m.id ? `<button class="btn peligro" data-acc="borrarMeta" data-id="${m.id}">${I('basura', 16)} Borrar</button>` : ''}</div>`;
   }
 
   // =================== MÁS
   function pMas() {
     const E = A.E, rs = E.rotaciones.slice().sort((a, b) => a.desde < b.desde ? 1 : -1);
     const ultima = E.cfg.ultimaCopia ? F.entre(E.cfg.ultimaCopia, HOY) : null;
-    return cab('ajustes', 'Más', 'farmacias y copias') +
+    return volver() + cab('ajustes', 'Más', 'farmacias y copias') +
       `<div class="hoja-p"><span class="cinta">Farmacias de turno</span>
         ${E.farmacias.map(x => `<div class="fila"><span style="color:${x.nuestra ? 'var(--lila-osc)' : 'var(--tenue2)'}">${I('farmacia', 18)}</span><div class="txt"><b>${x.nuestra ? `<span class="resaltado">${esc(x.nombre)}</span>` : esc(x.nombre)}</b><small>${x.nuestra ? 'Nuestra' : ''}${x.corto && x.corto !== x.nombre ? (x.nuestra ? ' · ' : '') + 'en el calendario: ' + esc(x.corto) : ''}</small></div></div>`).join('')}
         <div class="botones"><button class="btn sec" data-acc="farmacias">${I('lapiz', 18)} Cambiar farmacias</button></div></div>
@@ -187,7 +358,7 @@
         <div class="botones"><button class="btn" data-acc="copia">${I('guardar', 18)} Guardar copia</button><label class="btn sec" style="cursor:pointer">${I('subir', 18)} Restaurar copia<input type="file" accept=".json,application/json,text/plain" data-acc="restaurar" hidden></label></div></div>
       <div class="hoja-p"><span class="cinta chica">Instalar en el iPhone</span>
         <ol style="margin:6px 0 0;padding-left:20px;font-size:14px;line-height:1.7"><li>Abrir este link en <b>Safari</b>.</li><li>Tocar <b>Compartir</b> ${I('compartir', 16)} (abajo).</li><li>Elegir <b>“Agregar a inicio”</b> y tocar <b>Agregar</b>.</li><li>Abrirla siempre desde el ícono “Agenda”.</li></ol></div>
-      <div class="pie">Agenda de guardias · RoFac ${VERSION}<br>hecha con ${Ad.corazon(10)} para Mariana</div>`;
+      <div class="pie">Mi Agenda · RoFac ${VERSION}<br>hecha con ${Ad.corazon(10)} para Mariana</div>`;
   }
 
   function instalarAviso() {
@@ -214,8 +385,10 @@
         <div class="bloque" style="${i.nuestra ? 'background:#efe7f8' : ''}">${quien}${det ? `<div style="font-size:13.5px;margin-top:4px">${det}</div>` : ''}
           <div class="botones" style="margin-top:10px"><button class="btn chico" data-acc="cambiar" data-f="${f}">${I('cambio', 17)} Cambiar guardia</button>
           ${i.cambio ? `<button class="btn sec chico" data-acc="original" data-f="${f}">Volver al listado</button>` : ''}</div></div>
-        <div class="bloque"><div class="flex"><b style="font-family:var(--serif);color:var(--lila-osc)">Recordatorios</b><span class="sp"></span><button class="btn sec chico" data-acc="nuevoRec" data-f="${f}">${I('mas_', 16)} Agregar</button></div>
-          ${recs.map(r => filaRec(r, false)).join('') || '<div class="vacio" style="font-size:14px">Ninguno</div>'}</div>
+        <div class="bloque"><div class="flex"><b style="font-family:var(--serif);color:var(--lila-osc)">Citas médicas</b><span class="sp"></span><button class="btn sec chico" data-acc="nuevaCita" data-f="${f}">${I('mas_', 16)} Cita</button></div>
+          ${A.citasDe(f).map(c => filaCita(c, false)).join('') || '<div class="vacio" style="font-size:14px">Ninguna</div>'}</div>
+        <div class="bloque"><div class="flex"><b style="font-family:var(--serif);color:var(--lila-osc)">Tareas y recordatorios</b><span class="sp"></span><button class="btn sec chico" data-acc="nuevaTarea" data-f="${f}">${I('mas_', 16)} Tarea</button><button class="btn sec chico" data-acc="nuevoRec" data-f="${f}" style="margin-left:6px">${I('mas_', 16)} Record.</button></div>
+          ${A.tareasDe(f).map(filaTarea).join('')}${recs.map(r => filaRec(r, false)).join('')}${A.tareasDe(f).length || recs.length ? '' : '<div class="vacio" style="font-size:14px">Nada</div>'}</div>
         <div class="bloque"><b style="font-family:var(--serif);color:var(--lila-osc)">Nota del día</b>
           <textarea class="in renglones" data-dia="notas" data-f="${f}" placeholder="Escribí algo para este día…">${esc(dd.notas)}</textarea></div>`;
     };
@@ -311,12 +484,14 @@
   const alCalendario = (nombre, txt) => { darArchivo(nombre, txt, 'text/calendar', false); toast('Tocá “Agregar” en el calendario que se abre'); };
 
   // =================== pintar
-  const PANT = { hoy: ['Hoy', 'hoy', pHoy], mes: ['Mes', 'mes', pMes], semana: ['Semana', 'semana', pSemana], recordar: ['Recordar', 'recordar', pRecordar], mas: ['Más', 'mas', pMas] };
+  const PANT = { inicio: ['Inicio', 'inicio', pInicio], mes: ['Mes', 'mes', pMes], semana: ['Semana', 'semana', pSemana], hoy: ['Mi día', 'midia', pHoy], mas: ['Más', 'mas', pMas] };
+  const OTRAS = { guardias: pGuardias, citas: pCitas, tareas: pTareas, notas: pNotas, habitos: pHabitos, metas: pMetas, recordar: pRecordar };
   function pintar() {
     HOY = F.hoyLocal();
-    const s = window.scrollY, p = PANT[V.pant] || PANT.hoy;
-    $('#main').innerHTML = p[2](); enganchar($('#main'));
-    $('#tabs').innerHTML = '<div class="in-tabs">' + Object.entries(PANT).map(([k, v]) => `<button class="${k === V.pant ? 'act' : ''}" data-acc="ir" data-p="${k}">${I(v[1], 23)}<span>${v[0]}</span></button>`).join('') + '</div>';
+    if (!PANT[V.pant] && !OTRAS[V.pant]) V.pant = 'inicio';
+    const s = window.scrollY, fn = PANT[V.pant] ? PANT[V.pant][2] : OTRAS[V.pant], tab = PANT[V.pant] ? V.pant : 'inicio';
+    $('#main').innerHTML = fn(); enganchar($('#main'));
+    $('#tabs').innerHTML = '<div class="in-tabs">' + Object.entries(PANT).map(([k, v]) => `<button class="${k === tab ? 'act' : ''}" data-acc="ir" data-p="${k}">${I(v[1], 23)}<span>${v[0]}</span></button>`).join('') + '</div>';
     enganchar($('#tabs'));
     return s;
   }
@@ -358,6 +533,40 @@
     borrarRec: d => { A.borrarRecordatorio(d.id); cerrar(); repintar(); toast('Recordatorio borrado', true); },
     icsRec: d => { const r = A.E.recordatorios.find(x => x.id === d.id); if (r) alCalendario('recordatorio.ics', A.icsRecordatorio(r)); },
     hecho: (d, el) => { const si = !el.classList.contains('ok'); A.marcarHecho(d.id, d.f, si); repintar(); refrescarHoja(); if (si) toast('¡Hecho!', true); },
+    // citas
+    nuevaCita: d => { cerrar(); abrir(hCita({ fecha: d.f })); },
+    editCita: d => { const c = A.E.citas.find(x => x.id === d.id); if (c) abrir(hCita(c)); },
+    guardarCita: d => {
+      let c; try { c = A.guardarCita({ id: d.id || null, titulo: $('#ciT').value, fecha: $('#ciF').value, hora: $('#ciH').value, lugar: $('#ciL').value, nota: $('#ciN').value, fui: $('#ciFui') ? $('#ciFui').checked : false }); }
+      catch (e) { $('#ciErr').textContent = e.message; return; }
+      cerrar(); repintar(); toast(d.id ? 'Cita guardada' : 'Cita agregada', true); if (d.ics) alCalendario('cita.ics', A.icsCita(c));
+    },
+    borrarCita: d => { A.borrarCita(d.id); cerrar(); repintar(); toast('Cita borrada', true); },
+    // tareas
+    tTab: d => { V.tTab = d.v; repintar(); },
+    nuevaTarea: d => { cerrar(); abrir(hTarea({ fecha: d.f || '' })); },
+    editTarea: d => { const t = A.E.tareas.find(x => x.id === d.id); if (t) abrir(hTarea(t)); },
+    guardarTarea: d => { try { A.guardarTarea({ id: d.id || null, t: $('#taT').value, fecha: $('#taF').value, nota: $('#taN').value }); } catch (e) { $('#taErr').textContent = e.message; return; } cerrar(); repintar(); toast('Tarea guardada', true); },
+    borrarTarea: d => { A.borrarTarea(d.id); cerrar(); repintar(); toast('Tarea borrada', true); },
+    tareaOk: (d, el) => { const si = !el.classList.contains('ok'); A.tareaOk(d.id, si); repintar(); refrescarHoja(); if (si) toast('¡Hecha!', true); },
+    borrarHechas: () => { A.borrarHechas(); repintar(); toast('Tareas hechas borradas', true); },
+    // notas
+    editNota: d => { const n = d.id ? A.E.notas.find(x => x.id === d.id) : {}; if (n) abrir(hNota(n)); },
+    guardarNota: d => { try { A.guardarNota({ id: d.id || null, titulo: $('#noT').value, texto: $('#noX').value }); } catch (e) { $('#noErr').textContent = e.message; return; } cerrar(); repintar(); toast('Nota guardada', true); },
+    fijarNota: d => { A.fijarNota(d.id); cerrar(); repintar(); },
+    borrarNota: d => { A.borrarNota(d.id); cerrar(); repintar(); toast('Nota borrada', true); },
+    // hábitos
+    habSug: d => { intentar(() => A.guardarHabito({ nombre: d.n, emoji: d.e }), 'Hábito agregado'); repintar(); },
+    editHab: d => { const h = d.id ? A.E.habitos.find(x => x.id === d.id) : {}; if (!h) return; habEmoji = h.emoji || '🌱'; abrir(hHabito(h)); },
+    habEmoji: (d, el) => { habEmoji = d.e; $$('#haE button').forEach(b => b.classList.toggle('act', b === el)); },
+    guardarHab: d => { try { A.guardarHabito({ id: d.id || null, nombre: $('#haN').value, emoji: habEmoji }); } catch (e) { $('#haErr').textContent = e.message; return; } cerrar(); repintar(); toast('Hábito guardado', true); },
+    borrarHab: d => { A.borrarHabito(d.id); cerrar(); repintar(); toast('Hábito borrado', true); },
+    habDia: d => { const si = !A.habitoHecho(d.id, d.f); A.tildarHabito(d.id, d.f, si); repintar(); },
+    // metas
+    editMeta: d => { const m = d.id ? A.E.metas.find(x => x.id === d.id) : {}; if (m) abrir(hMeta(m)); },
+    guardarMeta: d => { try { A.guardarMeta({ id: d.id || null, titulo: $('#meT').value, fecha: $('#meF').value, avance: $('#meA').value, nota: $('#meN').value }); } catch (e) { $('#meErr').textContent = e.message; return; } cerrar(); repintar(); toast('Meta guardada', true); },
+    borrarMeta: d => { A.borrarMeta(d.id); cerrar(); repintar(); toast('Meta borrada', true); },
+    metaMas: d => { const m = A.E.metas.find(x => x.id === d.id); if (!m) return; A.avanceMeta(d.id, m.avance + +d.n); repintar(); if (m.avance + +d.n >= 100) toast('¡Meta cumplida! 🎉', true); },
     // mi día
     pend: d => { const dd = A.dia(d.f), p = (dd.pendientes || []).map(x => ({ ...x })); p[+d.k].ok = !p[+d.k].ok; A.guardarDia(d.f, { pendientes: p }, 'el pendiente'); repintar(); },
     pendX: d => { const dd = A.dia(d.f), p = (dd.pendientes || []).slice(); p.splice(+d.k, 1); A.guardarDia(d.f, { pendientes: p }, 'el pendiente borrado'); repintar(); toast('Pendiente borrado', true); },
@@ -388,6 +597,7 @@
   function enganchar(raiz) {
     raiz.querySelectorAll('[data-acc]').forEach(el => {
       const acc = el.dataset.acc;
+      if (el.tagName === 'FORM' && acc === 'tareaAdd') return el.addEventListener('submit', e => { e.preventDefault(); const t = el.t.value.trim(); if (!t) return; intentar(() => A.guardarTarea({ t }), null); repintar(); setTimeout(() => { const i = $('form[data-acc=tareaAdd] input'); i && i.focus(); }, 30); });
       if (el.tagName === 'FORM') return el.addEventListener('submit', e => { e.preventDefault(); const t = el.t.value.trim(); if (!t) return; const dd = A.dia(el.dataset.f); A.guardarDia(el.dataset.f, { pendientes: (dd.pendientes || []).concat([{ t, ok: false }]) }, 'el pendiente'); repintar(); setTimeout(() => { const i = $(`form[data-f="${el.dataset.f}"] input`); i && i.focus(); }, 30); });
       if (acc === 'restaurar') return el.addEventListener('change', async () => {
         const f = el.files[0]; if (!f) return; const t = await f.text();

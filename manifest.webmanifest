@@ -1,7 +1,7 @@
 {
   "id": "./?app=agenda",
-  "name": "Agenda de guardias",
-  "short_name": "Agenda",
+  "name": "Mi Agenda",
+  "short_name": "Mi Agenda",
   "description": "Guardias de la farmacia, recordatorios y mi día",
   "start_url": "./?app=agenda",
   "scope": "./",

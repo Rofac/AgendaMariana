@@ -44,6 +44,7 @@
   function crear(guardado) {
     let E = guardado && typeof guardado === 'object' && Array.isArray(guardado.farmacias) ? guardado : inicial();
     E.cambios = E.cambios || {}; E.recordatorios = E.recordatorios || []; E.dias = E.dias || {}; E.cfg = E.cfg || {};
+    E.citas = E.citas || []; E.tareas = E.tareas || []; E.notas = E.notas || []; E.habitos = E.habitos || []; E.habHechos = E.habHechos || {}; E.metas = E.metas || [];
     const atras = [];                                    // para "Deshacer"
 
     const farmacia = id => E.farmacias.find(x => x.id === id) || { id, nombre: id || '—', corto: id || '—' };
@@ -164,6 +165,83 @@
     }
     function recordatoriosEntre(d, h) { const out = []; for (let f = d; f <= h; f = sumar(f, 1)) out.push(...recordatoriosDe(f)); return out; }
 
+
+    // ---------- listas (citas, tareas, notas, hábitos, metas): guardar / borrar con "Deshacer"
+    function upsert(lista, x, que) {
+      antes(que); x.id = x.id || nuevoId(); const L = E[lista], i = L.findIndex(y => y.id === x.id);
+      if (i >= 0) L[i] = { ...L[i], ...x }; else L.push(x); guardar(); return L.find(y => y.id === x.id);
+    }
+    function borrarDe(lista, id, que) { const L = E[lista], i = L.findIndex(y => y.id === id); if (i < 0) return; antes(que); L.splice(i, 1); guardar(); }
+    const txt = (v, max) => String(v == null ? '' : v).trim().slice(0, max || 500);
+
+    // citas médicas
+    function guardarCita(c) {
+      const titulo = txt(c.titulo, 80); if (!titulo) throw new Error('Escribí con quién es la cita (médico o especialidad)');
+      if (!valida(c.fecha)) throw new Error('Elegí la fecha'); if (c.hora && !/^\d{2}:\d{2}$/.test(c.hora)) throw new Error('Hora inválida');
+      return upsert('citas', { id: c.id || null, titulo, fecha: c.fecha, hora: c.hora || '', lugar: txt(c.lugar, 120), nota: txt(c.nota, 400), fui: !!c.fui }, c.id ? 'el cambio de la cita' : 'la cita nueva');
+    }
+    const ordCita = (a, b) => (a.fecha + (a.hora || '99')) < (b.fecha + (b.hora || '99')) ? -1 : 1;
+    const citasDe = f => E.citas.filter(c => c.fecha === f).sort(ordCita);
+    const citasEntre = (d, h) => E.citas.filter(c => c.fecha >= d && c.fecha <= h).sort(ordCita);
+    function icsCita(c) {
+      return ics([{ uid: 'cita-' + c.id, titulo: c.titulo, fecha: c.fecha, hora: c.hora, nota: [c.lugar, c.nota].filter(Boolean).join(' · '), aviso: c.hora ? '-PT2H' : '-PT15H' }]);
+    }
+
+    // tareas
+    function guardarTarea(t) {
+      const tx = txt(t.t, 160); if (!tx) throw new Error('Escribí la tarea');
+      if (t.fecha && !valida(t.fecha)) throw new Error('Fecha inválida');
+      const viejo = t.id ? E.tareas.find(y => y.id === t.id) : null;
+      return upsert('tareas', { id: t.id || null, t: tx, fecha: t.fecha || '', nota: txt(t.nota, 400), ok: viejo ? viejo.ok : false, hecha: viejo ? viejo.hecha : '', creada: viejo ? viejo.creada : hoyLocal() }, t.id ? 'el cambio de la tarea' : 'la tarea nueva');
+    }
+    function tareaOk(id, si) { const x = E.tareas.find(y => y.id === id); if (!x) return; antes(si ? 'tarea hecha' : 'desmarcar'); x.ok = !!si; x.hecha = si ? hoyLocal() : ''; guardar(); }
+    function tareasPendientes() {
+      return E.tareas.filter(x => !x.ok).sort((a, b) => (a.fecha || '9999') < (b.fecha || '9999') ? -1 : (a.fecha || '9999') > (b.fecha || '9999') ? 1 : (a.creada < b.creada ? -1 : 1));
+    }
+    const tareasDe = f => E.tareas.filter(x => x.fecha === f);
+    function borrarHechas() { if (!E.tareas.some(x => x.ok)) return; antes('las tareas hechas'); E.tareas = E.tareas.filter(x => !x.ok); guardar(); }
+
+    // notas
+    function guardarNota(n) {
+      const titulo = txt(n.titulo, 80), texto = txt(n.texto, 5000); if (!titulo && !texto) throw new Error('La nota está vacía');
+      const viejo = n.id ? E.notas.find(y => y.id === n.id) : null;
+      return upsert('notas', { id: n.id || null, titulo, texto, fijada: viejo ? !!viejo.fijada : false, color: viejo ? viejo.color : E.notas.length % 4, mod: new Date().toISOString() }, n.id ? 'el cambio de la nota' : 'la nota nueva');
+    }
+    function fijarNota(id) { const x = E.notas.find(y => y.id === id); if (!x) return; antes('fijar'); x.fijada = !x.fijada; guardar(); }
+    const notasOrdenadas = () => E.notas.slice().sort((a, b) => (b.fijada ? 1 : 0) - (a.fijada ? 1 : 0) || (a.mod < b.mod ? 1 : -1));
+
+    // hábitos
+    function guardarHabito(h) {
+      const nombre = txt(h.nombre, 40); if (!nombre) throw new Error('Escribí el hábito');
+      if (E.habitos.some(y => y.id !== h.id && y.nombre.toLowerCase() === nombre.toLowerCase())) throw new Error('Ya tenés ese hábito');
+      return upsert('habitos', { id: h.id || null, nombre, emoji: txt(h.emoji, 8) || '🌱' }, h.id ? 'el cambio del hábito' : 'el hábito nuevo');
+    }
+    function borrarHabito(id) {
+      const i = E.habitos.findIndex(y => y.id === id); if (i < 0) return; antes('el hábito borrado'); E.habitos.splice(i, 1);
+      for (const f of Object.keys(E.habHechos)) { E.habHechos[f] = E.habHechos[f].filter(x => x !== id); if (!E.habHechos[f].length) delete E.habHechos[f]; }
+      guardar();
+    }
+    const habitoHecho = (id, f) => (E.habHechos[f] || []).includes(id);
+    function tildarHabito(id, f, si) {
+      if (!valida(f)) throw new Error('Fecha inválida'); antes(si ? 'el hábito' : 'desmarcar');
+      const l = (E.habHechos[f] || []).filter(x => x !== id); if (si) l.push(id);
+      if (l.length) E.habHechos[f] = l; else delete E.habHechos[f]; guardar();
+    }
+    function racha(id, hasta) {   // días seguidos hasta hoy (si hoy todavía no lo hizo, cuenta hasta ayer)
+      let f = hasta, n = 0; if (!habitoHecho(id, f)) f = sumar(f, -1);
+      while (habitoHecho(id, f) && n < 3660) { n++; f = sumar(f, -1); }
+      return n;
+    }
+
+    // metas
+    function guardarMeta(m) {
+      const titulo = txt(m.titulo, 80); if (!titulo) throw new Error('Escribí la meta');
+      if (m.fecha && !valida(m.fecha)) throw new Error('Fecha inválida');
+      const av = Math.max(0, Math.min(100, Math.round(+m.avance || 0)));
+      return upsert('metas', { id: m.id || null, titulo, fecha: m.fecha || '', avance: av, nota: txt(m.nota, 400) }, m.id ? 'el cambio de la meta' : 'la meta nueva');
+    }
+    function avanceMeta(id, n) { const x = E.metas.find(y => y.id === id); if (!x) return; antes('el avance'); x.avance = Math.max(0, Math.min(100, Math.round(n))); guardar(); }
+
     // ---------- mi día
     function dia(f) { return E.dias[f] || { foco: '', pendientes: [], notas: '', agua: 0, animo: 0 }; }
     function guardarDia(f, cambios, que) {
@@ -251,7 +329,12 @@
       E, farmacia, esNuestra, nuestras, oficial, info, guardiasNuestras, proximasNuestras, resumenMes,
       cambiar, volverOriginal, guardarRecordatorio, borrarRecordatorio, marcarHecho, recordatoriosDe, recordatoriosEntre,
       dia, guardarDia, guardarFarmacias, nuevoListado, borrarListado, setConfirmado, setCfg, exportar, importar,
-      icsRecordatorio, icsGuardias, deshacer, hayDeshacer: () => atras.length > 0, set alGuardar(fn) { alGuardar = fn; },
+      icsRecordatorio, icsGuardias, deshacer,
+      guardarCita, citasDe, citasEntre, icsCita, borrarCita: id => borrarDe('citas', id, 'la cita borrada'),
+      guardarTarea, tareaOk, tareasPendientes, tareasDe, borrarHechas, borrarTarea: id => borrarDe('tareas', id, 'la tarea borrada'),
+      guardarNota, fijarNota, notasOrdenadas, borrarNota: id => borrarDe('notas', id, 'la nota borrada'),
+      guardarHabito, borrarHabito, habitoHecho, tildarHabito, racha,
+      guardarMeta, avanceMeta, borrarMeta: id => borrarDe('metas', id, 'la meta borrada'), hayDeshacer: () => atras.length > 0, set alGuardar(fn) { alGuardar = fn; },
     };
   }
 
