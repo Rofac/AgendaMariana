@@ -137,7 +137,9 @@
     }
     function volverOriginal(f) { if (!E.cambios[f]) return; antes('volver a la guardia original'); quitarSinGuardar(f); guardar(); }
 
-    // ---------- recordatorios
+    // ---------- recordatorios (con un emoji según qué es: turno médico, trámite, cumpleaños…)
+    const TIPOS_REC = { medico: '🩺', tramite: '📄', cumple: '🎂', salida: '🎉', recordar: '🔔', otro: '📌' };
+    const emojiRec = r => TIPOS_REC[r && r.tipo] || '';
     const nuevoId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     function guardarRecordatorio(r) {
       const t = (r.titulo || '').trim(); if (!t) throw new Error('Escribí qué hay que recordar');
@@ -145,7 +147,7 @@
       if (r.hora && !/^\d{2}:\d{2}$/.test(r.hora)) throw new Error('Hora inválida');
       const rep = ['no', 'semana', 'mes', 'anio'].includes(r.repetir) ? r.repetir : 'no';
       antes(r.id ? 'el cambio del recordatorio' : 'el recordatorio nuevo');
-      const x = { id: r.id || nuevoId(), titulo: t, fecha: r.fecha, hora: r.hora || '', nota: (r.nota || '').trim(), repetir: rep, hechos: [] };
+      const x = { id: r.id || nuevoId(), titulo: t, fecha: r.fecha, hora: r.hora || '', nota: (r.nota || '').trim(), repetir: rep, hechos: [], tipo: TIPOS_REC[r.tipo] ? r.tipo : '' };
       const i = E.recordatorios.findIndex(y => y.id === x.id);
       if (i >= 0) { x.hechos = E.recordatorios[i].hechos || []; E.recordatorios[i] = x; } else E.recordatorios.push(x);
       guardar(); return x;
@@ -320,7 +322,7 @@
     }
     function icsRecordatorio(r) {
       const rr = { semana: 'FREQ=WEEKLY', mes: 'FREQ=MONTHLY', anio: 'FREQ=YEARLY' }[r.repetir];
-      return ics([{ uid: r.id, titulo: r.titulo, fecha: r.fecha, hora: r.hora, nota: r.nota, rrule: rr, aviso: r.hora ? '-PT30M' : '-PT15H' }]);
+      return ics([{ uid: r.id, titulo: (emojiRec(r) ? emojiRec(r) + ' ' : '') + r.titulo, fecha: r.fecha, hora: r.hora, nota: r.nota, rrule: rr, aviso: r.hora ? '-PT30M' : '-PT15H' }]);
     }
     function icsGuardias(desde, hasta) {
       return ics(guardiasNuestras(desde, hasta).map(i => ({
@@ -334,7 +336,7 @@
       E, farmacia, esNuestra, nuestras, oficial, info, guardiasNuestras, proximasNuestras, resumenMes,
       cambiar, volverOriginal, guardarRecordatorio, borrarRecordatorio, marcarHecho, recordatoriosDe, recordatoriosEntre,
       dia, guardarDia, guardarFarmacias, nuevoListado, borrarListado, setConfirmado, setCfg, exportar, importar,
-      icsRecordatorio, icsGuardias, deshacer,
+      icsRecordatorio, icsGuardias, deshacer, emojiRec,
       guardarCita, citasDe, citasEntre, icsCita, borrarCita: id => borrarDe('citas', id, 'la cita borrada'),
       guardarTarea, tareaOk, tareasPendientes, tareasDe, borrarHechas, borrarTarea: id => borrarDe('tareas', id, 'la tarea borrada'),
       guardarNota, fijarNota, notasOrdenadas, borrarNota: id => borrarDe('notas', id, 'la nota borrada'),

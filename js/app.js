@@ -65,11 +65,14 @@
       <div class="txt"><b>${esc(nombreF(i.turno))}</b> ${i.tomada ? '<span class="chip tom">cambio</span>' : ''} ${i.estimado ? '<span class="chip est">a confirmar</span>' : ''}
       ${i.cambio && i.cambio.nota ? `<small>${esc(i.cambio.nota)}</small>` : ''}</div><div class="falta">${faltan(i.fecha)}</div></div>`;
   }
+  const emo = r => A.emojiRec(r) ? A.emojiRec(r) + ' ' : '';
+  const TIPOS_REC = [['medico', '🩺', 'Turno médico'], ['tramite', '📄', 'Trámite'], ['cumple', '🎂', 'Cumpleaños'], ['salida', '🎉', 'Salida / evento'], ['recordar', '🔔', 'Recordatorio'], ['otro', '📌', 'Otro']];
+  let recTipo = '';
   function filaRec(r, conFecha) {
     const d = F.aD(r.dia);
     return `<div class="fila ${r.hecho ? 'hecho' : ''}">
       <button class="circ ${r.hecho ? 'ok' : ''}" data-acc="hecho" data-id="${r.id}" data-f="${r.dia}" aria-label="Hecho">${r.hecho ? I('check', 15) : ''}</button>
-      <div class="txt toca" data-acc="editRec" data-id="${r.id}" data-f="${r.dia}" style="cursor:pointer"><b>${esc(r.titulo)}</b>
+      <div class="txt toca" data-acc="editRec" data-id="${r.id}" data-f="${r.dia}" style="cursor:pointer"><b>${emo(r)}${esc(r.titulo)}</b>
         <small>${conFecha ? (r.dia === HOY ? 'Hoy' : DIAS3[d.getUTCDay()] + ' ' + F.fechaCorta(r.dia)) : ''}${r.hora ? (conFecha ? ' · ' : '') + r.hora + ' h' : ''}${r.repetir !== 'no' ? ' · ' + repTxt[r.repetir] : ''}${r.nota ? ' · ' + esc(r.nota) : ''}</small></div>
       ${conFecha ? `<div class="falta" style="font-size:16px">${r.dia === HOY ? '' : faltan(r.dia)}</div>` : ''}</div>`;
   }
@@ -135,7 +138,7 @@
         <div class="der"><div class="tur">${tur}${i.estimado ? ' <span class="chip est">a confirmar</span>' : ''}</div>
         ${A.citasDe(f).map(c => `<div class="rec">${I('estetos', 13)} ${c.hora ? `<span class="h">${c.hora}</span> ` : ''}${esc(c.titulo)}</div>`).join('')}
         ${A.tareasDe(f).map(t => `<div class="rec ${t.ok ? 'tachado' : ''}">☐ ${esc(t.t)}</div>`).join('')}
-        ${recs.map(r => `<div class="rec ${r.hecho ? 'tachado' : ''}">${Ad.corazon(10)} ${r.hora ? `<span class="h">${r.hora}</span> ` : ''}${esc(r.titulo)}</div>`).join('')}
+        ${recs.map(r => `<div class="rec ${r.hecho ? 'tachado' : ''}">${A.emojiRec(r) || Ad.corazon(10)} ${r.hora ? `<span class="h">${r.hora}</span> ` : ''}${esc(r.titulo)}</div>`).join('')}
         ${pend ? `<div class="rec" style="color:var(--tenue)">☐ ${pend} pendiente${pend > 1 ? 's' : ''}</div>` : ''}${dia && dia.notas ? `<div class="rec" style="color:var(--tenue)">✎ ${esc(dia.notas)}</div>` : ''}</div></div>`;
     }
     const n = A.guardiasNuestras(l, dom).length;
@@ -158,7 +161,7 @@
       <div style="text-align:center"><button class="btn" data-acc="nuevoRec" data-f="${HOY}">${I('mas_', 20)} Nuevo recordatorio</button></div>
       ${atras.length ? `<div class="hoja-p"><span class="cinta cuadros">Quedaron sin marcar</span>${atras.map(r => filaRec(r, true)).join('')}</div>` : ''}
       <div class="hoja-p"><span class="cinta">Próximos 60 días</span><span class="adorno" style="right:4px;top:-10px">${Ad.chinche()}</span>${bloques || '<div class="vacio">No hay recordatorios</div>'}</div>
-      ${todos.length ? `<div class="hoja-p"><span class="cinta papel">Todos (${todos.length})</span>${todos.map(r => `<div class="fila toca" data-acc="editRec" data-id="${r.id}" data-f="${r.fecha}"><div class="txt"><b>${esc(r.titulo)}</b><small>${F.fechaCorta(r.fecha)}/${r.fecha.slice(0, 4)}${r.hora ? ' · ' + r.hora : ''}${r.repetir !== 'no' ? ' · ' + repTxt[r.repetir] : ''}</small></div>${I('lapiz', 18)}</div>`).join('')}</div>` : ''}`;
+      ${todos.length ? `<div class="hoja-p"><span class="cinta papel">Todos (${todos.length})</span>${todos.map(r => `<div class="fila toca" data-acc="editRec" data-id="${r.id}" data-f="${r.fecha}"><div class="txt"><b>${emo(r)}${esc(r.titulo)}</b><small>${F.fechaCorta(r.fecha)}/${r.fecha.slice(0, 4)}${r.hora ? ' · ' + r.hora : ''}${r.repetir !== 'no' ? ' · ' + repTxt[r.repetir] : ''}</small></div>${I('lapiz', 18)}</div>`).join('')}</div>` : ''}`;
   }
 
   // =================== INICIO (accesos rápidos)
@@ -352,6 +355,10 @@
       <div class="hoja-p lila"><span class="cinta">Calendario del iPhone</span><span class="adorno" style="left:-8px;top:-14px">${Ad.clip(40)}</span>
         <div style="font-size:14px">Pasa nuestras guardias al calendario del iPhone, así te avisa la noche anterior.</div>
         <div class="botones"><button class="btn" data-acc="icsGuardias">${I('cal', 18)} Pasar guardias al calendario</button></div></div>
+      <div class="hoja-p"><span class="cinta chica">Activación</span>
+        <div style="font-size:14px">${AgendaLic.vence() === '99991231' ? 'Activada <b>sin vencimiento</b>.' : 'Activada hasta el <b>' + AgendaLic.fechaTxt(AgendaLic.vence() || '') + '</b>.'}</div>
+        <div class="muestra">Código de este celular: <b>${AgendaLic.equipo()}</b>. Cuando esté por vencer, mandáselo a Rodrigo y cargá la clave nueva.</div>
+        <div class="botones"><a class="btn sec chico" href="https://wa.me/?text=${encodeURIComponent(AgendaLic.textoWA())}" target="_blank" rel="noopener">Mandar código</a><button class="btn sec chico" data-acc="licNueva">Cargar clave nueva</button></div></div>
       <div class="hoja-p"><span class="cinta papel">Copia de seguridad</span>
         <div style="font-size:14px">Todo queda guardado en este celular. Guardá una copia de vez en cuando (en WhatsApp, Drive o Archivos) por si se cambia o se pierde el teléfono.</div>
         <div class="muestra">${ultima == null ? 'Todavía no guardaste ninguna copia.' : 'Última copia: ' + (ultima === 0 ? 'hoy' : 'hace ' + ultima + ' día' + (ultima > 1 ? 's' : ''))}</div>
@@ -421,6 +428,7 @@
   // ---------- recordatorio
   function hRec(r) {
     return () => `${btnCerrar}<h2>${r.id ? 'Recordatorio' : 'Nuevo recordatorio'}</h2>
+      <label class="l">¿Qué es?</label><div class="pills" id="rTipo">${TIPOS_REC.map(([v, e, t]) => `<button type="button" data-acc="recTipo" data-v="${v}" class="${recTipo === v ? 'act' : ''}">${e} ${t}</button>`).join('')}</div>
       <label class="l">¿Qué hay que recordar?</label><input class="in" id="rT" value="${esc(r.titulo || '')}" placeholder="Ej.: Ginecólogo, pagar luz, cumple de…" autocomplete="off">
       <div class="dos"><div><label class="l">Fecha</label><input class="in" type="date" id="rF" value="${r.fecha || HOY}"></div>
         <div><label class="l">Hora (opcional)</label><input class="in" type="time" id="rH" value="${r.hora || ''}"></div></div>
@@ -521,11 +529,12 @@
     },
     original: d => { A.volverOriginal(d.f); toast('Volvió a como está en el listado', true); repintar(); refrescarHoja(); },
     // recordatorios
-    nuevoRec: d => { recRep = 'no'; abrir(hRec({ fecha: d.f })); },
-    editRec: d => { const r = A.E.recordatorios.find(x => x.id === d.id); if (!r) return; recRep = r.repetir; abrir(hRec(r)); },
+    nuevoRec: d => { recRep = 'no'; recTipo = 'recordar'; abrir(hRec({ fecha: d.f })); },
+    editRec: d => { const r = A.E.recordatorios.find(x => x.id === d.id); if (!r) return; recRep = r.repetir; recTipo = r.tipo || ''; abrir(hRec(r)); },
+    recTipo: (d, el) => { recTipo = d.v; $$('#rTipo button').forEach(b => b.classList.toggle('act', b === el)); if (d.v === 'cumple' && recRep === 'no') { recRep = 'anio'; $$('#rRep button').forEach(b => b.classList.toggle('act', b.dataset.v === 'anio')); } },
     rep: (d, el) => { recRep = d.v; $$('#rRep button').forEach(b => b.classList.toggle('act', b === el)); },
     guardarRec: d => {
-      let r; try { r = A.guardarRecordatorio({ id: d.id || null, titulo: $('#rT').value, fecha: $('#rF').value, hora: $('#rH').value, nota: $('#rN').value, repetir: recRep }); }
+      let r; try { r = A.guardarRecordatorio({ id: d.id || null, titulo: $('#rT').value, fecha: $('#rF').value, hora: $('#rH').value, nota: $('#rN').value, repetir: recRep, tipo: recTipo }); }
       catch (e) { $('#rErr').textContent = e.message; return; }
       cerrar(); repintar(); toast(d.id ? 'Recordatorio guardado' : 'Recordatorio agregado', true);
       if (d.ics) alCalendario('recordatorio.ics', A.icsRecordatorio(r));
@@ -585,6 +594,10 @@
     listadoGuardar: () => { leerListado(); try { A.nuevoListado(lst.desde, lst.orden, lst.hasta); } catch (e) { $('#lErr').textContent = e.message; return; } cerrar(); repintar(); toast('Listado guardado', true); },
     listadoX: d => { try { A.borrarListado(d.d); } catch (e) { $('#lErr').textContent = e.message; return; } cerrar(); repintar(); toast('Listado borrado', true); },
     confirmar: () => abrir(hConfirmar()),
+    licNueva: () => abrir(() => `${btnCerrar}<h2>Cargar clave nueva</h2><div style="font-size:14px">Código de este celular: <b>${AgendaLic.equipo()}</b></div>
+      <label class="l" for="licC">Clave que te pasó Rodrigo</label><textarea class="in" id="licC" rows="3" placeholder="AGE-2028…" autocomplete="off" autocapitalize="characters" spellcheck="false"></textarea>
+      <div class="error" id="licErr"></div><div class="botones"><button class="btn" data-acc="licGuardar">Activar</button><button class="btn sec" data-acc="cerrar">Cancelar</button></div>`),
+    licGuardar: async () => { const err = await AgendaLic.activar($('#licC').value); if (err) { $('#licErr').textContent = err; return; } cerrar(); repintar(); toast(AgendaLic.vence() === '99991231' ? 'Activada sin vencimiento' : 'Activada hasta el ' + AgendaLic.fechaTxt(AgendaLic.vence())); },
     confirmarGuardar: () => { try { A.setConfirmado($('#cC').value); } catch (e) { $('#ccErr').textContent = e.message; return; } cerrar(); repintar(); toast('Guardado', true); },
     icsGuardias: () => { const d = HOY, h = A.E.confirmadoHasta > HOY ? A.E.confirmadoHasta : F.sumar(HOY, 60), n = A.guardiasNuestras(d, h).length;
       if (!n) return toast('No hay guardias para pasar', false, true); alCalendario('guardias.ics', A.icsGuardias(d, h)); },
@@ -618,6 +631,11 @@
   // al volver a la app otro día, se actualiza "hoy"
   document.addEventListener('visibilitychange', () => { if (!document.hidden && F.hoyLocal() !== HOY) { V.lunes = F.lunesDe(F.hoyLocal()); V.mes = F.hoyLocal().slice(0, 7); pintar(); } });
   window.AgendaApp = { A, pintar, ir };
-  pintar();
+  // sólo anda si este celular está activado (clave de Rodrigo)
+  AgendaLic.revisar().then(ok => {
+    if (!ok) return AgendaLic.pantalla(() => { pintar(); toast('¡Listo! ' + (AgendaLic.vence() === '99991231' ? 'Activada sin vencimiento' : 'Activada hasta el ' + AgendaLic.fechaTxt(AgendaLic.vence()))); });
+    pintar();
+    const n = AgendaLic.dias(); if (n != null && n <= 20) toast(n === 0 ? 'La activación vence HOY: pedile una clave nueva a Rodrigo' : 'La activación vence en ' + n + ' día' + (n > 1 ? 's' : '') + ': pedile una clave nueva a Rodrigo', false, true);
+  });
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

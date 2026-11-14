@@ -264,3 +264,13 @@ textarea.in { min-height: 70px; resize: vertical; }
 .hab-barra div { height: 100%; background: linear-gradient(90deg, var(--lila), var(--lila-osc)); border-radius: 5px; transition: width .3s; }
 .meta-p { font: 600 22px var(--serif); color: var(--lila-osc); }
 @media (max-width: 390px) { .ini-cab { padding-left: 84px; } .ini-cinta span { font-size: 32px; white-space: nowrap; } .ini-pie .frase { font-size: 16px; } .ini-cfg { top: -8px; right: -8px; } .ini-t { font-size: 12px; } .ini-t svg { width: 30px; height: 30px; } }
+
+/* ---------- activación del celular */
+.activar { max-width: 460px; margin: 0 auto; padding: 24px 0 40px; text-align: center; }
+.activar .act-logo { width: 84px; height: 84px; border-radius: 20px; box-shadow: 0 6px 18px -8px #6f5a96aa; }
+.activar h1 { font: 600 24px/1.2 var(--serif); margin: 14px 0 6px; color: var(--lila-osc); }
+.activar p { font-size: 14.5px; margin: 0 0 14px; }
+.activar .hoja-p, .activar .aviso { text-align: left; }
+.act-cod { font-size: 26px; font-weight: 700; letter-spacing: 2px; color: var(--lila-osc); background: var(--lila-suave); border-radius: 10px; padding: 10px; text-align: center; margin: 6px 0 4px; user-select: all; -webkit-user-select: all; }
+textarea.in { word-break: break-all; }
+a.btn { text-decoration: none; }
