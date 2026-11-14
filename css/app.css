@@ -274,3 +274,7 @@ textarea.in { min-height: 70px; resize: vertical; }
 .act-cod { font-size: 26px; font-weight: 700; letter-spacing: 2px; color: var(--lila-osc); background: var(--lila-suave); border-radius: 10px; padding: 10px; text-align: center; margin: 6px 0 4px; user-select: all; -webkit-user-select: all; }
 textarea.in { word-break: break-all; }
 a.btn { text-decoration: none; }
+
+/* emoji del recordatorio en el calendario (en vez del puntito) */
+.grilla .c .pts { align-items: center; }
+.grilla .c .pts em { font-style: normal; font-size: 11px; line-height: 1; }

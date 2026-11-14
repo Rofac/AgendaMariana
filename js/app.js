@@ -105,7 +105,7 @@
       else if (i.nuestra || todas) cont = `<span class="f">${esc(nombre)}</span>`;
       celdas += `<button class="c ${i.nuestra ? 'nuestra' : ''} ${f === HOY ? 'hoy' : ''} ${i.estimado ? 'est' : ''}" data-acc="dia" data-f="${f}" aria-label="${esc(F.fechaLarga(f) + ': ' + nombreF(i.turno))}">
         <span class="n">${F.aD(f).getUTCDate()}</span>${cont}
-        <span class="pts">${A.citasDe(f).length ? '<i class="cita"></i>' : ''}${recs.length || A.tareasDe(f).some(t => !t.ok) ? '<i></i>' : ''}${dd && (dd.notas || dd.foco) ? '<i class="nota"></i>' : ''}</span>${i.cambio && i.cambio.f !== i.oficial ? '<span class="ico-cambio">⇄</span>' : ''}</button>`;
+        <span class="pts">${A.citasDe(f).length ? '<i class="cita"></i>' : ''}${[...new Set(recs.map(A.emojiRec).filter(Boolean))].slice(0, 2).map(e => `<em>${e}</em>`).join('')}${recs.some(x => !A.emojiRec(x)) || A.tareasDe(f).some(t => !t.ok) ? '<i></i>' : ''}${dd && (dd.notas || dd.foco) ? '<i class="nota"></i>' : ''}</span>${i.cambio && i.cambio.f !== i.oficial ? '<span class="ico-cambio">⇄</span>' : ''}</button>`;
     }
     const resto = (7 - (vacias + F.finDeMes(a, m)) % 7) % 7;
     for (let k = 0; k < resto; k++) celdas += `<div class="c fuera"></div>`;
