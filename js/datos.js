@@ -33,7 +33,7 @@
         { id: 'charytonow', nombre: 'Charytonow', corto: 'Charyt.' },
       ],
       rotaciones: [{ desde: '2026-11-01', orden: ['cristal', 'sanjose', 'villaberthet', 'roma2', 'sanmartin', 'roma', 'delcarmen', 'charytonow'] }],
-      confirmadoHasta: '2026-12-31',
+      confirmadoHasta: '2027-12-31', mig2027: 1,
       cambios: {},          // fecha → { f: farmacia que hace la guardia, nota, par: fecha del intercambio }
       recordatorios: [],    // { id, titulo, fecha, hora, nota, repetir: no|semana|mes|anio, hechos: [fechas] }
       dias: {},             // fecha → { foco, pendientes: [{t, ok}], notas, agua, animo }
@@ -46,6 +46,10 @@
     E.cambios = E.cambios || {}; E.recordatorios = E.recordatorios || []; E.dias = E.dias || {}; E.cfg = E.cfg || {};
     E.citas = E.citas || []; E.tareas = E.tareas || []; E.notas = E.notas || []; E.habitos = E.habitos || []; E.habHechos = E.habHechos || {}; E.metas = E.metas || [];
     const atras = [];                                    // para "Deshacer"
+
+    // listado 2027 confirmado (13/11/2026): si seguía con la fecha original, pasa al 31/12/2027 (una sola vez)
+    let migro = false;
+    if (!E.mig2027) { if (E.confirmadoHasta === '2026-12-31') E.confirmadoHasta = '2027-12-31'; E.mig2027 = 1; migro = !!guardado; }
 
     const farmacia = id => E.farmacias.find(x => x.id === id) || { id, nombre: id || '—', corto: id || '—' };
     const esNuestra = id => !!farmacia(id).nuestra;
@@ -325,6 +329,7 @@
       })));
     }
 
+    if (migro) { try { raiz.localStorage && raiz.localStorage.setItem(CLAVE, JSON.stringify(E)); } catch (e) {} }
     return {
       E, farmacia, esNuestra, nuestras, oficial, info, guardiasNuestras, proximasNuestras, resumenMes,
       cambiar, volverOriginal, guardarRecordatorio, borrarRecordatorio, marcarHecho, recordatoriosDe, recordatoriosEntre,
